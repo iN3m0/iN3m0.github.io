@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>William Remo — Software Dev</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0D0221;
+    --panel: #1A0B3D;
+    --panel-light: #241154;
+    --magenta: #FF2E88;
+    --cyan: #00F0FF;
+    --yellow: #FFD23F;
+    --ink: #F5F0FF;
+    --ink-dim: #9E8FC7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .pixel { font-family: 'Press Start 2P', monospace; }
+
+  /* CRT scanline overlay */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.12) 3px
+    );
+    mix-blend-mode: multiply;
+  }
+  .vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99;
+    box-shadow: inset 0 0 180px rgba(0,0,0,0.75);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  /* ---------- NAV ---------- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: rgba(13,2,33,0.85);
+    backdrop-filter: blur(6px);
+    border-bottom: 2px solid var(--panel-light);
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: var(--yellow);
+  }
+  .logo::after {
+    content: '_';
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 1px;
+    position: relative;
+    padding-left: 18px;
+  }
+  .nav-links a::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: var(--magenta);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .nav-links a:hover::before { opacity: 1; }
+  .nav-links a:hover { color: var(--cyan); }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 24px 60px;
+    position: relative;
+    background:
+      radial-gradient(circle at 50% 20%, rgba(255,46,136,0.15), transparent 60%),
+      radial-gradient(circle at 20% 80%, rgba(0,240,255,0.1), transparent 50%);
+  }
+
+  .eyebrow {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(28px, 6vw, 56px);
+    line-height: 1.5;
+    color: var(--ink);
+    text-shadow: 3px 3px 0 var(--magenta), 6px 6px 0 rgba(0,240,255,0.4);
+    margin-bottom: 28px;
+  }
+
+  .hero-sub {
+    max-width: 560px;
+    color: var(--ink-dim);
+    font-size: 16px;
+    margin-bottom: 40px;
+  }
+  .hero-sub .fill { color: var(--yellow); }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    padding: 18px 32px;
+    background: var(--magenta);
+    color: var(--void);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 5px 5px 0 var(--yellow);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 3px 3px 0 var(--yellow);
+  }
+  .btn.secondary {
+    background: transparent;
+    color: var(--cyan);
+    box-shadow: 5px 5px 0 var(--cyan);
+    border: 2px solid var(--cyan);
+  }
+
+  .press-start {
+    margin-top: 56px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--yellow);
+    animation: blink 1.1s step-end infinite;
+  }
+
+  /* ---------- SECTION SHARED ---------- */
+  section { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--magenta);
+    margin-bottom: 12px;
+    display: block;
+  }
+  .section-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(20px, 3.5vw, 32px);
+    margin-bottom: 48px;
+    color: var(--ink);
+  }
+
+  /* ---------- ABOUT / STATS ---------- */
+  .stats-panel {
+    background: var(--panel);
+    border: 2px solid var(--panel-light);
+    border-radius: 4px;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  .avatar {
+    width: 160px;
+    height: 160px;
+    background: linear-gradient(135deg, var(--magenta), var(--cyan));
+    border: 3px solid var(--yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 32px;
+    color: var(--void);
+    overflow: hidden;
+  }
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.1) contrast(1.05);
+  }
+  .about-bio { color: var(--ink-dim); margin-bottom: 24px; }
+  .about-bio .fill { color: var(--yellow); }
+
+  .stat-bars { display: flex; flex-direction: column; gap: 14px; }
+  .stat-row { display: grid; grid-template-columns: 110px 1fr 40px; align-items: center; gap: 12px; }
+  .stat-name { font-size: 13px; color: var(--ink-dim); }
+  .stat-track {
+    height: 14px;
+    background: var(--void);
+    border: 2px solid var(--panel-light);
+  }
+  .stat-fill { height: 100%; background: var(--cyan); }
+  .stat-fill.magenta { background: var(--magenta); }
+  .stat-fill.yellow { background: var(--yellow); }
+  .stat-val { font-size: 12px; color: var(--ink-dim); text-align: right; }
+
+  /* ---------- PROJECTS / LEVEL SELECT ---------- */
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 28px;
+  }
+  .level-card {
+    background: var(--panel);
+    border: 2px solid var(--panel-light);
+    padding: 0 0 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .level-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-4px);
+  }
+  .level-shot {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-bottom: 2px solid var(--panel-light);
+    background: var(--void);
+  }
+  .level-shot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: saturate(1.1) contrast(1.05);
+    transition: transform 0.25s ease;
+  }
+  .level-card:hover .level-shot img { transform: scale(1.06); }
+  .level-shot::after {
+    /* scanline texture over each screenshot, like a CRT preview */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(13,2,33,0) 0px,
+      rgba(13,2,33,0) 2px,
+      rgba(13,2,33,0.25) 3px
+    );
+    pointer-events: none;
+  }
+  .level-shot-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    background: var(--void);
+    color: var(--yellow);
+    padding: 5px 8px;
+    border: 1px solid var(--yellow);
+    z-index: 2;
+  }
+  .level-body { padding: 24px 28px 0; }
+  .level-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--yellow);
+    margin-bottom: 16px;
+    display: block;
+  }
+  .level-card h3 {
+    font-size: 19px;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .level-card p {
+    color: var(--ink-dim);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .power-ups { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .power-up {
+    font-size: 11px;
+    padding: 5px 10px;
+    background: var(--void);
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    border-radius: 2px;
+  }
+  .level-card .btn { font-size: 11px; padding: 12px 20px; box-shadow: 3px 3px 0 var(--yellow); margin-bottom: 4px; }
+  .level-body > .btn { display: inline-block; }
+  .level-body .power-ups { margin-bottom: 20px; }
+  .level-body p, .level-body .power-ups { padding: 0; }
+
+  /* ---------- RESUME / QUEST LOG ---------- */
+  .quest-log { display: flex; flex-direction: column; gap: 0; }
+  .quest-item {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 24px;
+    padding: 24px 0;
+    border-bottom: 1px dashed var(--panel-light);
+  }
+  .quest-date {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--magenta);
+  }
+  .quest-role { color: var(--ink); font-weight: bold; margin-bottom: 6px; }
+  .quest-desc { color: var(--ink-dim); font-size: 14px; }
+  .resume-cta { margin-top: 40px; }
+
+  /* ---------- CONTACT / INSERT COIN ---------- */
+  .coin-panel {
+    background: var(--panel);
+    border: 2px solid var(--panel-light);
+    padding: 56px 40px;
+    text-align: center;
+  }
+  .coin-panel .section-title { margin-bottom: 16px; }
+  .coin-sub { color: var(--ink-dim); margin-bottom: 36px; }
+  .contact-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- FOOTER MARQUEE ---------- */
+  footer {
+    border-top: 2px solid var(--panel-light);
+    padding: 20px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .marquee {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--ink-dim);
+    animation: scroll-left 18s linear infinite;
+  }
+  @keyframes scroll-left {
+    0% { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  @media (max-width: 640px) {
+    nav { padding: 16px 20px; }
+    .nav-links { gap: 16px; }
+    .nav-links a { font-size: 11px; }
+    section { padding: 70px 20px; }
+    .stats-panel { grid-template-columns: 1fr; }
+    .avatar { margin: 0 auto; }
+    .quest-item { grid-template-columns: 1fr; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<nav>
+  <div class="logo pixel">WR</div>
+  <ul class="nav-links">
+    <li><a href="#about">ABOUT</a></li>
+    <li><a href="#projects">PROJECTS</a></li>
+    <li><a href="#resume">RESUME</a></li>
+    <li><a href="/blog">BLOG</a></li>
+    <li><a href="#contact">CONTACT</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <span class="eyebrow pixel">PLAYER ONE HAS ENTERED</span>
+  <h1>WILLIAM REMO<br>SOFTWARE DEV</h1>
+  <p class="hero-sub">Building web apps, full-stack applications, and automated tools since <span class="fill">2018</span>. Currently <span class="fill">seeking an internship</span>.</p>
+  <a href="#projects" class="btn">VIEW PROJECTS</a>
+  <div class="press-start pixel">PRESS START ↓</div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <span class="section-label pixel">01 / STATS</span>
+  <h2 class="section-title">CHARACTER SHEET</h2>
+  <div class="stats-panel">
+    <div class="avatar"><img src="profile-photo.jpg" alt="William Remo"></div>
+    <div>
+      <p class="about-bio">I'm <span class="fill">William Remo</span>, a <span class="fill">Software Development student at College of the North Atlantic</span> based in <span class="fill">Corner Brook, NL</span>. I love building practical applications and learning new technologies.</p>
+      <div class="stat-bars">
+        <div class="stat-row">
+          <span class="stat-name">PYTHON</span>
+          <div class="stat-track"><div class="stat-fill" style="width: 95%"></div></div>
+          <span class="stat-val">95</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-name">JAVASCRIPT</span>
+          <div class="stat-track"><div class="stat-fill magenta" style="width: 93%"></div></div>
+          <span class="stat-val">93</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-name">JAVA</span>
+          <div class="stat-track"><div class="stat-fill yellow" style="width: 90%"></div></div>
+          <span class="stat-val">90</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-name">MYSQL</span>
+          <div class="stat-track"><div class="stat-fill" style="width: 91%"></div></div>
+          <span class="stat-val">91</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <span class="section-label pixel">02 / LEVELS</span>
+  <h2 class="section-title">SELECT YOUR LEVEL</h2>
+  <div class="level-grid">
+    <div class="level-card">
+      <div class="level-shot">
+        <span class="level-shot-tag">PREVIEW</span>
+        <img src="refillsnl-screenshot.png" alt="Refills NL homepage screenshot">
+      </div>
+      <div class="level-body">
+        <span class="level-num pixel">LEVEL 01</span>
+        <h3>Refills NL</h3>
+        <p>A virtual clinic platform for Newfoundland and Labrador residents to book phone appointments for prescription refills, medication reviews, and bloodwork referrals. Served as product manager for the backend appointment booking system and developed the WordPress front end.</p>
+        <div class="power-ups">
+          <span class="power-up">WordPress</span>
+          <span class="power-up">PHP</span>
+          <span class="power-up">MySQL</span>
+        </div>
+        <a href="https://refillsnl.ca/" class="btn" target="_blank" rel="noopener">PLAY ▶</a>
+      </div>
+    </div>
+    <div class="level-card">
+      <div class="level-shot">
+        <span class="level-shot-tag">PREVIEW</span>
+        <img src="cbrc-screenshot.png" alt="Corner Brook Running Club homepage screenshot">
+      </div>
+      <div class="level-body">
+        <span class="level-num pixel">LEVEL 02</span>
+        <h3>Corner Brook Running Club</h3>
+        <p>Rebuilt and modernized the Corner Brook Running Club's website in WordPress, covering event listings, race results, a photo gallery, and volunteer sign-up.</p>
+        <div class="power-ups">
+          <span class="power-up">WordPress</span>
+          <span class="power-up">PHP</span>
+        </div>
+        <a href="https://www.cornerbrookrun.com/" class="btn" target="_blank" rel="noopener">PLAY ▶</a>
+      </div>
+    </div>
+    <div class="level-card">
+      <div class="level-shot">
+        <span class="level-shot-tag">PREVIEW</span>
+        <img src="steam-backlog-screenshot.png" alt="Steam Backlog Tracker app screenshot">
+      </div>
+      <div class="level-body">
+        <span class="level-num pixel">LEVEL 03</span>
+        <h3>Steam Backlog Tracker</h3>
+        <p>A desktop app for managing your Steam game backlog — sync your library, track completion status, fetch HowLongToBeat time estimates, and visualize progress with a stats dashboard and achievement tracking.</p>
+        <div class="power-ups">
+          <span class="power-up">Electron</span>
+          <span class="power-up">React</span>
+          <span class="power-up">TypeScript</span>
+        </div>
+        <a href="https://github.com/iN3m0/steam-backlog" class="btn" target="_blank" rel="noopener">PLAY ▶</a>
+      </div>
+    </div>
+    <div class="level-card">
+      <div class="level-shot">
+        <span class="level-shot-tag">PREVIEW</span>
+        <img src="jarvis-screenshot.png" alt="JARVIS local voice assistant terminal screenshot">
+      </div>
+      <div class="level-body">
+        <span class="level-num pixel">LEVEL 04</span>
+        <h3>JARVIS — Local Voice Assistant</h3>
+        <p>A voice assistant that runs entirely on your own machine — listens through the mic, sees through the webcam, thinks with a local Ollama model, and takes real actions through n8n workflows, with nothing sent to outside servers.</p>
+        <div class="power-ups">
+          <span class="power-up">Python</span>
+          <span class="power-up">Ollama</span>
+          <span class="power-up">n8n</span>
+        </div>
+        <a href="https://github.com/iN3m0/AI-Assistant" class="btn" target="_blank" rel="noopener">PLAY ▶</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESUME -->
+<section id="resume">
+  <span class="section-label pixel">03 / QUEST LOG</span>
+  <h2 class="section-title">EXPERIENCE</h2>
+  <div class="quest-log">
+    <div class="quest-item">
+      <span class="quest-date pixel">APR–MAY 2026</span>
+      <div>
+        <div class="quest-role">Website Developer — College of the North Atlantic</div>
+        <div class="quest-desc">Built and maintained a WordPress website for a local running club, implemented SEO best practices, and designed responsive layouts across devices.</div>
+      </div>
+    </div>
+    <div class="quest-item">
+      <span class="quest-date pixel">JAN–MAR 2026</span>
+      <div>
+        <div class="quest-role">Project Manager — Emed Solutions</div>
+        <div class="quest-desc">Coordinated a cross-functional team on a healthcare software project, communicated with stakeholders on requirements and status, and tracked timelines to keep deliverables on schedule.</div>
+      </div>
+    </div>
+    <div class="quest-item">
+      <span class="quest-date pixel">2024–PRESENT</span>
+      <div>
+        <div class="quest-role">Diploma, Software Development — College of the North Atlantic</div>
+        <div class="quest-desc">Corner Brook, NL.</div>
+      </div>
+    </div>
+    <div class="quest-item">
+      <span class="quest-date pixel">2022–2023</span>
+      <div>
+        <div class="quest-role">Computer Science — Memorial University</div>
+        <div class="quest-desc">St. John's, NL.</div>
+      </div>
+    </div>
+  </div>
+  <div class="resume-cta">
+    <a href="William_Remo_Resume.pdf" class="btn secondary" target="_blank" rel="noopener">DOWNLOAD RESUME ⬇</a>
+  </div>
+</section>
+
+<!-- BLOG TEASER -->
+<section id="blog-teaser">
+  <span class="section-label pixel">BONUS LEVEL</span>
+  <h2 class="section-title">READ THE BLOG</h2>
+  <div class="stats-panel" style="grid-template-columns: 1fr; text-align: left;">
+    <div>
+      <p class="about-bio">I write about my software development journey, the things I'm building, what I'm learning along the way, and the wins and setbacks that come with it.</p>
+      <a href="/blog" class="btn">GO TO BLOG ▶</a>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="coin-panel">
+    <span class="section-label pixel">04 / CONTINUE?</span>
+    <h2 class="section-title">INSERT COIN</h2>
+    <p class="coin-sub">Have a project in mind? Let's talk.</p>
+    <div class="contact-links">
+      <a href="mailto:williamremo2004@gmail.com" class="btn">EMAIL</a>
+      <a href="https://github.com/iN3m0" class="btn secondary" target="_blank" rel="noopener">GITHUB</a>
+      <a href="https://linkedin.com/in/williamremo" class="btn secondary" target="_blank" rel="noopener">LINKEDIN</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="marquee pixel">WILLIAM REMO · SOFTWARE DEVELOPER · SEEKING INTERNSHIP · 4 PROJECTS SHIPPED · WILLIAM REMO · SOFTWARE DEVELOPER · SEEKING INTERNSHIP · 4 PROJECTS SHIPPED ·</span>
+</footer>
+
+</body>
+</html>
